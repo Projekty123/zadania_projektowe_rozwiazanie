@@ -1,0 +1,70 @@
+window.app = window.app || {};
+
+app.tasks = [];
+app.currentSort = 'desc';
+
+// Weryfikacja i pobieranie danych ze storage
+app.loadTasks = function () {
+  try {
+    const rawData = localStorage.getItem('project_tasks');
+    const parsed = JSON.parse(rawData);
+    app.tasks = Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Błąd wczytywania z localStorage, e);
+    app.tasks = [];
+  }
+};
+
+app.saveTasks = function () {
+  localStorage.setItem('project_tasks', JSON.stringify(app.tasks));
+};
+
+app.getTaskById = function (id) {
+  return app.tasks.find(t => t.id === Number(id));
+};
+
+app.saveTaskData = function (taskData) {
+  if (taskData.id) {
+    // Edycja
+    const index = app.tasks.findIndex(t => t.id === Number(taskData.id));
+    if (index !== -1) {
+      app.tasks[index] = { ...app.tasks[index], ...taskData, id: Number(taskData.id) };
+    }
+  } else {
+    // Nowe zadanie
+    const newTask = {
+      ...taskData,
+      id: Date.now(),
+      uwagi: []
+    };
+    app.tasks.push(newTask);
+  }
+  app.saveTasks();
+};
+
+app.deleteTask = function (id) {
+  if (confirm('Czy na pewno chcesz usunąć to zadanie?')) {
+    app.tasks = app.tasks.filter(t => t.id !== Number(id));
+    app.saveTasks();
+    app.render();
+  }
+};
+
+app.clearAllTasks = function () {
+  if (confirm('Czy na pewno chcesz usunąć WSZYSTKIE zadania? Operacji nie można cofnąć.')) {
+    app.tasks = [];
+    app.saveTasks();
+    app.render();
+  }
+};
+
+// Sprawdzanie czy zadanie jest zalegle
+app.isOverdue = function (task) {
+  if (task.status === 'zrobione') return false;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const dueDate = new Date(task.termin);
+  return dueDate < today;
+};
